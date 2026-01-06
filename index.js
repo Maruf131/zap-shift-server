@@ -62,6 +62,7 @@ async function run() {
       }
     };
 
+    // Query email: when, match the same email database can't store data. Otherwise save
     app.post("/users", async (req, res) => {
       const email = req.body.email;
       const userExists = await usersCollection.findOne({ email });
@@ -169,24 +170,37 @@ async function run() {
 
     app.patch("/riders/:id/status", async (req, res) => {
       const { id } = req.params;
-      const { status } = req.body;
+      const { status, email } = req.body;
       const query = { _id: new ObjectId(id) };
       const updateDoc = {
         $set: {
-          status,
+          status
         },
       };
 
       try {
         const result = await ridersCollection.updateOne(query, updateDoc);
-
+        //update user role for accepting rider
+        if (status === "active") {
+          const useQuery = { email };
+          const userUpdateDoc = {
+            $set: {
+              role: "rider"
+            },
+          };
+          const roleResult = await usersCollection.updateOne(
+            useQuery,
+            userUpdateDoc
+          );
+          console.log(roleResult.modifiedCount);
+        }
         res.send(result);
       } catch (err) {
         res.status(500).send({ message: "Failed to update rider status" });
       }
     });
 
-    app.get("/riders/active",async (req, res) => {
+    app.get("/riders/active", async (req, res) => {
       const result = await ridersCollection
         .find({ status: "active" })
         .toArray();
