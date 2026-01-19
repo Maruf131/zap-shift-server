@@ -153,14 +153,14 @@ async function run() {
         try {
           const result = await usersCollection.updateOne(
             { _id: new ObjectId(id) },
-            { $set: { role } }
+            { $set: { role } },
           );
           res.send({ message: `User role updated to ${role}`, result });
         } catch (error) {
           console.error("Error updating user role", error);
           res.status(500).send({ message: "Failed to update user role" });
         }
-      }
+      },
     );
 
     // GET: parcels api
@@ -249,7 +249,7 @@ async function run() {
           { _id: new ObjectId(parcelId) },
           {
             $set: updatedDoc,
-          }
+          },
         );
         res.send(result);
       } catch (error) {
@@ -272,7 +272,7 @@ async function run() {
               assigned_rider_email: riderEmail,
               assigned_rider_name: riderName,
             },
-          }
+          },
         );
 
         // Update rider
@@ -282,7 +282,7 @@ async function run() {
             $set: {
               work_status: "in_delivery",
             },
-          }
+          },
         );
 
         res.send({ message: "Rider assigned" });
@@ -301,7 +301,7 @@ async function run() {
             cashout_status: "cashed_out",
             cashed_out_at: new Date(),
           },
-        }
+        },
       );
       res.send(result);
     });
@@ -358,8 +358,31 @@ async function run() {
             .status(500)
             .send({ message: "Failed to load completed deliveries" });
         }
-      }
+      },
     );
+
+    app.get("/parcels/delivery/status-count", async (req, res) => {
+      const pipeline = [
+        {
+          $group: {
+            _id: "$delivery_status",
+            count: {
+              $sum: 1,
+            },
+          },
+        },
+        {
+          $project: {
+            status: "$_id",
+            count: 1,
+            _id: 0,
+          },
+        },
+      ];
+
+      const result = await parcelsCollection.aggregate(pipeline).toArray();
+      res.send(result);
+    });
 
     app.get("/rider/parcels", verifyFBToken, verifyRider, async (req, res) => {
       try {
@@ -452,7 +475,7 @@ async function run() {
           };
           const roleResult = await usersCollection.updateOne(
             useQuery,
-            userUpdateDoc
+            userUpdateDoc,
           );
           console.log(roleResult.modifiedCount);
         }
@@ -520,7 +543,7 @@ async function run() {
             $set: {
               paymentStatus: "paid",
             },
-          }
+          },
         );
 
         if (updateResult.modifiedCount === 0) {
@@ -567,7 +590,7 @@ async function run() {
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log(
-      "Pinged your deployment. You successfully connected to MongoDB!"
+      "Pinged your deployment. You successfully connected to MongoDB!",
     );
   } finally {
     // Ensures that the client will close when you finish/error
